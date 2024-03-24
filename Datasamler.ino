@@ -1,4 +1,12 @@
-//
+
+
+
+
+//////////////////////////
+// analogRead()-metoden //
+//////////////////////////
+
+
 const float R_PULLUP = 33.8;                      // DENNE MÅ JUSTERES ETTER HVILKDEN MCU SOM BRUKES!! 
 //
 const int maxADCVerdi = 1023;                     // Maximum value of the analog-to-digital converter (ADC)
