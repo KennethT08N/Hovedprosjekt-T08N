@@ -1,7 +1,7 @@
 /*   
 Filnavn: Piezotester-Non-Wired.ino
 Versjon:  1.0
-Revisjon: 1.0 - 26.04.24
+Revisjon: 1.1 - 26.04.24
 
 Utviklet av Kenneth Paulsen, Jone Johan Johnsen og Kenneth Svalstad Øien på vegne av Water Linked AS og Fagskolen i Viken, 2023/2024.
 ---Aktuelle datablad og annen relevant informasjon---
@@ -175,12 +175,14 @@ const unsigned char WLLogo[] PROGMEM = {
 int buttonstate;                         // Erklærer variabelen buttonstate
 int lastButtonstate = LOW;               // Setter lastButtonstate til LOW
 unsigned long lastDebounceTime = 0;      // Erklærer holdevariabel for å lagre tiden
-const unsigned long debounceDelay = 20;  // Erklærer tidsintervallet for debouncing av knappen
+const unsigned long debounceDelay = 50;  // Erklærer tidsintervallet for debouncing av knappen
 
-unsigned long currentTime = 0;  // Erklærer nåtid som 0
-unsigned long prevTime = 0;     // Erklærer forige lagrede tid som 0
+unsigned long currentTime = 0;            // Erklærer nåtid som 0
+unsigned long prevScreensaverTime = 0;    // Erklærer forige lagrede tid som 0
+unsigned long prevDisplayUpdateTime = 0;  // Erklærer forige lagrede tid som 0
 
 const unsigned long screensaverTimeout = 300000;  // Timer for å aktivere skjermspareren. 300000 ms = 5 min
+const unsigned long displayUpdateTimer = 1000;    // Timer for å oppdatere dispalyet
 
 const float lowerCapacitanceLimit = 2.1;  // Nedre grense for kapasitans
 const float upperCapacitanceLimit = 3.1;  // Øvre grense for kapasitans
@@ -279,8 +281,6 @@ void loop() {
   int buttonReading = digitalRead(DATA_BUTTON);  // Leser av dataknappen
   float measuredCapacitance = capacitance();     // Kjører capacitance()-funksjonen og lagrer returnert verdi (float) i measuredCapacitance
 
-  const int displayUpdateTimer = 500;
-  unsigned long prevDisplayUpdateTime = 0;
   currentTime = millis();  // Lagrer returnert verdi fra millis() (tid siden MCUen startet)
 
   //Serial.println(measuredCapacitance);    // Debug
@@ -311,8 +311,10 @@ void loop() {
     display.setFont(&FreeSans9pt7b);
   }
 
+
+  // Oppdaterer displayet om intervallet overskrides
   if (currentTime - prevDisplayUpdateTime >= displayUpdateTimer) {
-    display.display();  // Oppdaterer displayet om intervallet overskrides
+    display.display();  // Oppdaterer displayet
     prevDisplayUpdateTime = currentTime;
   }
 
@@ -346,18 +348,20 @@ void loop() {
   }
   lastButtonstate = buttonReading;
 
+
   // Skjermsparer
   if (capFail && !screensaverTimerActive) {                  // Hvis kapasitansen er feil og timeren ikke er aktiv
-    prevTime = currentTime;                                  // Oppdaterer nåtiden
+    prevScreensaverTime = currentTime;                       // Oppdaterer nåtiden
     screensaverTimerActive = true;                           // Aktiverer en av betingelsene til skjermspareren
   } else if (!capFail || digitalRead(DATA_BUTTON) == LOW) {  // Skrur displayet på om kapasitansen er OK eller dataknappen blir trykket inn
     display.ssd1306_command(SSD1306_DISPLAYON);
     screensaverTimerActive = false;  // Skrur av betingelsen for skjermspareren
   }
-  if (screensaverTimerActive && (currentTime - prevTime >= screensaverTimeout)) {  // Skrur displayet av om betingelsen møtes
+  if (screensaverTimerActive && (currentTime - prevScreensaverTime >= screensaverTimeout)) {  // Skrur displayet av om betingelsen møtes
     display.ssd1306_command(SSD1306_DISPLAYOFF);
     screensaverTimerActive = false;  // Skrur av betingelsen for skjermspareren
   }
+
 
   display.clearDisplay();
 }  // loop slutt
